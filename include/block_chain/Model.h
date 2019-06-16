@@ -31,6 +31,7 @@ struct Transaction {
         DEFAULTTYPE2JSON(data, author);
         DEFAULTTYPE2JSON(data, content);
         Type2JSON(data, timestamp, int64_t);
+        return std::move(data);
     }
 
     ~Transaction() {

@@ -83,7 +83,7 @@ namespace huang {
             });
         }
 
-        Json::Value &&toJSON() const {
+        Json::Value toJSON() const {
             Json::Value data;
             DEFAULTTYPE2JSON(data, nonce);
             DEFAULTTYPE2JSON(data, index);
@@ -91,6 +91,7 @@ namespace huang {
             DEFAULTTYPE2JSON(data, previous_hash);
             DEFAULTTYPE2JSON(data, _hash);
             VECTOR2JSON(data, transactions, toJSON);
+            return data;
         }
 
         string ComputeHash() const {
@@ -181,9 +182,8 @@ namespace huang {
 			return new_block.index;
 		}
 
-	private:
-		void createGenesisBlock() {
-			chain.eb(0, time(nullptr), vector<int>(), "0");
+		void CreateGenesisBlock() {
+			chain.eb(0, time(nullptr), vector<T>(), "0");
 		}	
 	};
 }
@@ -207,7 +207,6 @@ namespace std {
     };
 }
 
-extern huang::BlockChain<Transaction> block_chain;
-extern std::unordered_set<std::string> peers;
+
 
 #endif //BLOCK_CHAIN_BLOCKCHAIN_H

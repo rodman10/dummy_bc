@@ -29,6 +29,12 @@
     for (auto && e##f : _##f) { \
         f.eb(func(e##f)); \
     }
+#define JSON2SET(data, f, func) \
+    auto &_##f = data[#f]; \
+    f.clear(); \
+    for (auto && e##f : _##f) { \
+        f.emplace(e##f.func()); \
+    }
 #define JSON2CSTR(data, f, dest) \
     auto _##f = JSON2Type(data, f, CString); \
     auto f##len = strlen(_##f); \
@@ -39,7 +45,41 @@
 #define DEFAULTTYPE2JSON(data, f) \
     data[#f] = f;
 #define VECTOR2JSON(data, f, func) \
+    data[#f].append(Json::Value::null); \
+    data[#f].clear(); \
     for (auto &&e##f : f) { \
-        data[#f].append(e##f.func()); \
+        data[#f].append((e##f).func()); \
     }
+#define DEFAULTVECTOR2JSON(data, f) \
+    data[#f].append(Json::Value::null); \
+    data[#f].clear(); \
+    for (auto &&e##f : f) { \
+        data[#f].append(e##f); \
+    }
+
+#define FREE(ptr) \
+    if (nullptr != ptr) { \
+        free(ptr); \
+        ptr = nullptr; \
+    }
+
+inline int contains_char(CSTR str, int length, char c) {
+    for (int i = 0; i < length; ++i) {
+        if(str[i] == c) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+
+inline int num_len(int num) {
+    int len = 0;
+    do {
+        num /= 10;
+        ++len;
+    } while (num);
+    return len;
+}
+
 #endif //BLOCK_CHAIN_PRECOMPILED_H

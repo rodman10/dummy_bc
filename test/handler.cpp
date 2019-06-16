@@ -2,50 +2,105 @@
 // Created by huang on 19-6-8.
 //
 
+#include <vector>
 #include <json/json.h>
 #include <block_chain/BlockChain.h>
+#include <http/http.h>
+
+using std::vector;
+using huang::Block;
 
 extern huang::BlockChain<Transaction> block_chain;
-
+extern std::unordered_set<std::string> peers;
 
 route_entry(new_transaction) {
     Json::Value tx_data;
     auto flag = Json::Reader().parse(request.body, tx_data);
     if (!flag || tx_data["author"].isNull() || tx_data["content"].isNull()) {
-        return HTTP_Response("Invlaid transaction data", HTTP_STATUS_NOT_ACCEPTABLE);
+        return {"Invlaid transaction data", TEXT_PLAIN, HTTP_STATUS_NOT_ACCEPTABLE};
     }
     block_chain.AddNewTransaction(Transaction(tx_data["author"].asCString(), tx_data["content"].asCString(), time(NULL)));
 
-    return HTTP_Response("Success", HTTP_STATUS_OK);
+    return {"Success", TEXT_PLAIN, HTTP_STATUS_OK};
 }
 
-//route_entry(chain) {
-//
-//}
-//
-//route_entry(mine) {
-//
-//}
-//
-//route_entry(register_node) {
-//
-//}
-//
-//route_entry(register_with) {
-//
-//}
-//
-//route_entry(add_block) {
-//
-//}
-//
-//route_entry(pending_tx) {
-//
-//}
+route_entry(chain) {
+//    Consensus();
+    Json::Value data;
+    auto length = block_chain.chain.size();
+    DEFAULTTYPE2JSON(data, length);
+    auto &chain = block_chain.chain;
+    VECTOR2JSON(data, chain, toJSON)
+    DEFAULTVECTOR2JSON(data, peers);
+    auto &&res = Json::FastWriter().write(data);
+    return {res.c_str(), APPLICATION_JSON, HTTP_STATUS_OK};
+}
+
+route_entry(mine) {
+    auto res = block_chain.Mine();
+    if (!res) {
+        return {"No transactions to mine", TEXT_PLAIN, HTTP_STATUS_OK};
+    }
+    // const str length is 16
+    STR buf = malloc_str(num_len(res) + 16);
+    sprintf(buf, "Block %d is mined.", res);
+    return {buf, TEXT_PLAIN, HTTP_STATUS_OK};
+}
+
+route_entry(register_node) {
+    auto node_address = request.body;
+    if (!node_address) {
+        return {"Invalid data", TEXT_PLAIN, HTTP_STATUS_BAD_REQUEST};
+    }
+    peers.emplace(node_address);
+    return chain(request);
+}
+
+route_entry(register_with) {
+    auto node_address = request.body;
+    if (!node_address) {
+        return {"Invalid data", TEXT_PLAIN, HTTP_STATUS_BAD_REQUEST};
+    }
+    Json::Value data;
+    GET_HEADER(request, "Host", host);
+    data["node_address"] = host;
+    STR buf = malloc_str(strlen(host)+14);
+    sprintf(buf, "%s/register_node", data.asCString());
+
+    HTTP_Headers headers;
+    ADD_HEADER_WITH_OBJ(headers, CONTENT_TYPE, APPLICATION_JSON);
+    auto response= HTTP_Post(buf, headers, Json::FastWriter().write(data).c_str());
+    //TODO add http error
+    Json::Value res;
+    Json::Reader().parse(response, res);
+    block_chain = huang::BlockChain<Transaction>(res["chain"]);
+    JSON2SET(res["peers"], peers, asString);
+    return {"Registration successful", APPLICATION_JSON, HTTP_STATUS_OK};
+}
+
+route_entry(add_block) {
+    Json::Value block_data;
+    Json::Reader().parse(request.body, block_data);
+    Block<Transaction> block(block_data);
+    auto proof = block_data["_hash"].asCString();
+    auto added = block_chain.AddBlock(block, proof);
+    if (!added) {
+        return {"The block was discarded by the node", TEXT_PLAIN, HTTP_STATUS_BAD_REQUEST};
+    }
+    return {"Block added to the chain", TEXT_PLAIN, HTTP_STATUS_CREATED};
+}
+
+route_entry(pending_tx) {
+    Json::Value data;
+    auto& unconfirmed_transactions = block_chain.unconfirmed_transactions;
+    VECTOR2JSON(data, unconfirmed_transactions, toJSON);
+    return {data.asCString(), APPLICATION_JSON, HTTP_STATUS_OK};
+}
 
 //TODO custom settings
 bool InitRoute() {
     Register("/new_transaction", new_transaction, 1<<HTTP_POST);
+    Register("/chain", chain, 1<<HTTP_GET);
 }
 
 

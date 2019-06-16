@@ -6,6 +6,6 @@
 
 int main() {
 //    int n = strlen(NULL);
-    STR response = HTTP_Get("http://www.baidu.com/", nullptr, 0);
+    STR response = HTTP_Get("http://www.baidu.com/");
     puts(response);
 }

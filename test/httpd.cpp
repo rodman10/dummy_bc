@@ -29,27 +29,57 @@ void *accept_request(void *arg) {
     char buf[MAXLINE];
     HTTP_Request request;
     http_parser_settings settings;
-    settings.on_header_field = headerk_callback;
-    settings.on_header_value = headerv_callback;
+    settings.on_header_field = header_key_callback;
+    settings.on_header_value = header_val_callback;
     settings.on_body = body_callback;
     settings.on_url = url_callback;
     settings.on_message_complete = message_complete;
     http_parser *parser = (http_parser *)malloc(sizeof(http_parser));
     parser->data = (void *)&request;
     http_parser_init(parser, HTTP_REQUEST);
-    while (!parser->status_code && (bytes_received = recv(client, buf, MAXLINE, 0))>0) {
+    while (!parser->status_code && (bytes_received = recv(client, buf, MAXLINE, 0))>0)
+    {
         int len = tot_bytes_received + bytes_received;
-        data = (char *)realloc(data, (len+1)* sizeof(char));
+        auto tmp = (char *)realloc(data, (len+1)*sizeof(char));
+        if (!tmp) {
+            close(client);
+            return nullptr;
+        }
+        data = tmp;
         copy_str(data+tot_bytes_received, buf, bytes_received);
         tot_bytes_received = len;
         parsed_bytes += http_parser_execute(parser, &settings, data+parsed_bytes, bytes_received);
     }
+    FREE(data);
+
     if (bytes_received == -1) {
-        goto end;
+        close(client);
+        return nullptr;
     }
-    Route(request.url, 1<<parser->method)(request);
-    free(data);
-    end:
+
+
+    GET_HEADER(request, Host, domain);
+    int pos, domain_len = strlen(domain);
+    if (~(pos = contains_char(domain, domain_len, ':'))) {
+        request.set_hostname(domain, pos);
+        request.set_port(domain + pos + 1, domain_len - pos - 1);
+    } else {
+        request.set_hostname(domain, domain_len);
+        request.set_port("80", 2);
+    }
+    auto &&res = Route(request.path, 1<<parser->method)(request);
+    FREE(parser);
+    data = res.Serialize();
+    int tot_bytes_sent = 0, len = STRLEN(data), bytes_sent;
+    while (tot_bytes_sent < len) {
+        bytes_sent = send(client, data + tot_bytes_sent, 1024, 0);
+        if (bytes_sent == -1) {
+            close(client);
+            return nullptr;
+        }
+        tot_bytes_sent += bytes_sent;
+    }
+    FREE(data);
     close(client);
 }
 
@@ -82,8 +112,9 @@ int startup(int &port) {
 }
 
 huang::BlockChain<Transaction> block_chain;
-
 int main() {
+    block_chain.CreateGenesisBlock();
+
     int server_sock, client_sock;
     int port = 5000;
     struct sockaddr_in client_addr;

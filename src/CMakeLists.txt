@@ -21,5 +21,7 @@ include_sub_directories_recursively(${HEADER_DIR})
 
 aux_source_directory(http HTTP)
 aux_source_directory(web WEB)
+aux_source_directory(block_chain BLOCK_CHAIN)
 
 add_library(http_request SHARED ${HTTP} ${WEB})
+add_library(block_chain SHARED ${BLOCK_CHAIN})
