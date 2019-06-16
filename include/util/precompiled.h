@@ -35,6 +35,7 @@
     for (auto && e##f : _##f) { \
         f.emplace(e##f.func()); \
     }
+
 #define JSON2CSTR(data, f, dest) \
     auto _##f = JSON2Type(data, f, CString); \
     auto f##len = strlen(_##f); \

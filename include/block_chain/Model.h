@@ -6,23 +6,18 @@
 #define BLOCK_CHAIN_MODEL_H
 
 #include <util/precompiled.h>
+using std::string;
 
 struct Transaction {
-    char *author, *content;
+    string author, content;
     time_t timestamp;
 
-    Transaction(const char *author, const char *content, time_t timestamp) : timestamp(timestamp) {
-        int n = strlen(author);
-        this->author = malloc_str(n);
-        copy_str(this->author, author, n);
-        n = strlen(content);
-        this->content = malloc_str(n);
-        copy_str(this->content, content, n);
+    Transaction(const char *author, const char *content, time_t timestamp) : timestamp(timestamp), author(author), content(content) {
     }
 
     Transaction(const Json::Value &data) {
-        JSON2CSTR(data, author, this->author);
-        JSON2CSTR(data, content, this->content);
+        author = std::move(data["author"].asString());
+        content = std::move(data["content"].asString());
         timestamp = JSON2Type(data, timestamp, Int64);
     }
 
@@ -35,10 +30,6 @@ struct Transaction {
     }
 
     ~Transaction() {
-        free(author);
-        author = nullptr;
-        free(content);
-        content = nullptr;
     }
 };
 
@@ -50,11 +41,9 @@ namespace std {
     typedef string result_type;
     result_type operator()(argument_type const& s) const
     {
-        s;
-        auto &res = string(s.author).
+        return string(s.author).
                 append(s.content).
                 append(to_string(s.timestamp));
-        return res;
     }
 };
 }

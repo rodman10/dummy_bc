@@ -101,6 +101,7 @@ route_entry(pending_tx) {
 bool InitRoute() {
     Register("/new_transaction", new_transaction, 1<<HTTP_POST);
     Register("/chain", chain, 1<<HTTP_GET);
+    Register("/mine", mine, 1<<HTTP_GET);
 }
 
 

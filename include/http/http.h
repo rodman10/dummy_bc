@@ -239,6 +239,12 @@ struct HTTP_Response : HTTP_Base {
         // maybe add keep alive
         ADD_HEADER(CONNECTION, CLOSE);
         ADD_HEADER(CONTENT_TYPE, body_type);
+        AddHeaderKey(get_header_name(CONTENT_LENGTH), get_header_name_length(CONTENT_LENGTH));
+        auto n_len = num_len(len);
+        STR buf = malloc_str(n_len);
+        sprintf(buf, "%zu", len);
+        AddHeaderValue(buf, n_len);
+        FREE(buf);
     }
 
     STR Serialize() const {

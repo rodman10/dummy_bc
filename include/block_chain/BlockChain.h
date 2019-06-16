@@ -38,12 +38,13 @@ namespace std {
         typedef string result_type;
         result_type operator()(argument_type const& s) const
         {
-            auto &res = to_string(s.index).
+            auto res = to_string(s.index).
 					append(to_string(s.nonce)).
                     append(to_string(s.timestamp)).
                     append(s.previous_hash);
             for (auto &&e : s.transactions) {
-                res.append(hash<T>{}(e));
+                string tmp = hash<T>{}(e);
+                res.append(tmp);
             }
             return res;
         }
@@ -109,7 +110,7 @@ namespace huang {
 		int difficulty;
 		string prefix;
 	public:
-		BlockChain(int difficulty=2) : difficulty(difficulty) {
+		BlockChain(int difficulty=1) : difficulty(difficulty) {
 			prefix = string(difficulty, '0');
 		}
 
@@ -143,7 +144,7 @@ namespace huang {
 		string ProofOfWork(Block<T> &block) {
 			block.nonce = -1;
 			string computed_hash;
-			{
+			do {
 				++block.nonce;
 				computed_hash = move(block.ComputeHash());
 			} while (computed_hash.substr(0,difficulty) != prefix);
@@ -173,7 +174,7 @@ namespace huang {
 				return 0;
 			}
 			auto &last_block = chain.back();
-			Block<Transaction> new_block(last_block.index, time(nullptr), unconfirmed_transactions, last_block._hash);
+			Block<Transaction> new_block(last_block.index+1, time(nullptr), unconfirmed_transactions, last_block._hash);
 			auto proof = ProofOfWork(new_block);
 			AddBlock(new_block, proof);
 
