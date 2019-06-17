@@ -88,7 +88,7 @@ namespace huang {
             Json::Value data;
             DEFAULTTYPE2JSON(data, nonce);
             DEFAULTTYPE2JSON(data, index);
-            Type2JSON(data, timestamp, int64_t);
+            TYPE2JSON(data, timestamp, int64_t);
             DEFAULTTYPE2JSON(data, previous_hash);
             DEFAULTTYPE2JSON(data, _hash);
             VECTOR2JSON(data, transactions, toJSON);
@@ -128,7 +128,7 @@ namespace huang {
         bool AddBlock(Block<T> block, string proof) {
 			auto &previous_hash = chain.back()._hash;
 
-			if (previous_hash != block._hash || !isValidProof(block, proof)) {
+			if (previous_hash != block.previous_hash || !isValidProof(block, proof)) {
 				return 0;
 			}	
 

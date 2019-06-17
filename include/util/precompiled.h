@@ -41,10 +41,12 @@
     auto f##len = strlen(_##f); \
     dest = malloc_str(f##len); \
     copy_str(dest, (_##f), f##len);
-#define Type2JSON(data, f, type) \
+
+#define TYPE2JSON(data, f, type) \
     data[#f] = Json::Value((type)f);
 #define DEFAULTTYPE2JSON(data, f) \
     data[#f] = f;
+
 #define VECTOR2JSON(data, f, func) \
     data[#f].append(Json::Value::null); \
     data[#f].clear(); \

@@ -16,10 +16,15 @@ extern std::unordered_set<std::string> peers;
 route_entry(new_transaction) {
     Json::Value tx_data;
     auto flag = Json::Reader().parse(request.body, tx_data);
-    if (!flag || tx_data["author"].isNull() || tx_data["content"].isNull()) {
-        return {"Invlaid transaction data", TEXT_PLAIN, HTTP_STATUS_NOT_ACCEPTABLE};
+    if (!flag || tx_data["file_name"].isNull() || tx_data["file_hash"].isNull() ||
+            tx_data["file_origin_hash"].isNull() || tx_data["file_size"].isNull()) {
+        return {"Invalid transaction data", TEXT_PLAIN, HTTP_STATUS_NOT_ACCEPTABLE};
     }
-    block_chain.AddNewTransaction(Transaction(tx_data["author"].asCString(), tx_data["content"].asCString(), time(NULL)));
+    block_chain.AddNewTransaction(Transaction(tx_data["file_name"].asString(),
+                                              tx_data["file_hash"].asString(),
+                                              tx_data["file_origin_hash"].asString(),
+                                              tx_data["file_size"].asInt64(),
+                                              time(NULL)));
 
     return {"Success", TEXT_PLAIN, HTTP_STATUS_OK};
 }

@@ -112,11 +112,11 @@ int startup(int &port) {
 }
 
 huang::BlockChain<Transaction> block_chain;
-int main() {
+int main(int argc, char **argv) {
     block_chain.CreateGenesisBlock();
 
     int server_sock, client_sock;
-    int port = 5000;
+    int port = atoi(argv[1]);
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
 

@@ -18,6 +18,7 @@ function(include_sub_directories_recursively root_dir)
 endfunction()
 
 include_sub_directories_recursively(${HEADER_DIR})
+message(STATUS ${HEADER_DIR})
 
 aux_source_directory(http HTTP)
 aux_source_directory(web WEB)
