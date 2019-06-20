@@ -230,6 +230,7 @@ struct HTTP_Response : HTTP_Base {
     HTTP_Response(http_status code) : code(code) {}
 
     HTTP_Response(CSTR body, http_header_value body_type, http_status code) : code(code) {
+        headers = nullptr;
         auto len = STRLEN(body);
         body_length = len;
         if (len) {

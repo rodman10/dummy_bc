@@ -24,7 +24,7 @@ route_entry(new_transaction) {
                                               tx_data["file_hash"].asString(),
                                               tx_data["file_origin_hash"].asString(),
                                               tx_data["file_size"].asInt64(),
-                                              time(NULL)));
+                                              time(nullptr)));
 
     return {"Success", TEXT_PLAIN, HTTP_STATUS_OK};
 }
@@ -47,7 +47,7 @@ route_entry(mine) {
         return {"No transactions to mine", TEXT_PLAIN, HTTP_STATUS_OK};
     }
     // const str length is 16
-    STR buf = malloc_str(num_len(res) + 16);
+    auto buf = malloc_str(num_len(res) + 16);
     sprintf(buf, "Block %d is mined.", res);
     return {buf, TEXT_PLAIN, HTTP_STATUS_OK};
 }
@@ -69,7 +69,7 @@ route_entry(register_with) {
     Json::Value data;
     GET_HEADER(request, "Host", host);
     data["node_address"] = host;
-    STR buf = malloc_str(strlen(host)+14);
+    auto buf = malloc_str(strlen(host)+14);
     sprintf(buf, "%s/register_node", data.asCString());
 
     HTTP_Headers headers;

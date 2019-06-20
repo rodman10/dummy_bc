@@ -10,4 +10,4 @@ add_executable(RequestTest RequestTest.cpp)
 target_link_libraries(RequestTest http_request http_parser jsoncpp )
 
 add_executable(httpd httpd.cpp handler.cpp)
-target_link_libraries(httpd http_request pthread jsoncpp block_chain)
+target_link_libraries(httpd http_parser http_request pthread jsoncpp block_chain)

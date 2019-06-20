@@ -1,2 +1,0 @@
-FROM ubuntu:16.04
-MAINTAINER 1181591811hzr@gmail.com
