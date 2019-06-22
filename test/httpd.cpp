@@ -8,8 +8,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <pthread.h>
-
-#include <http/callback.h>
+#include <http/http_parser.h>
 #include <block_chain/BlockChain.h>
 
 std::unordered_set<std::string> peers;
@@ -24,72 +23,21 @@ void error_die(const char *sc)
 
 void *accept_request(void *arg) {
     int client = (int)(intptr_t)arg;
-    STR data = nullptr;
-    size_t data_len;
-    int parsed_bytes = 0;
-    size_t bytes_received, tot_bytes_received = 0;
-    size_t bytes_sent,     tot_bytes_sent = 0;
-    int method;
-
-    char buf[MAXLINE];
-
     HTTP_Request request;
-
-    http_parser_settings settings;
-    settings.on_header_field = header_key_callback;
-    settings.on_header_value = header_val_callback;
-    settings.on_body = body_callback;
-    settings.on_url = url_callback;
-    settings.on_message_complete = message_complete;
-
-    auto parser = (http_parser *)malloc(sizeof(http_parser));
-    parser->data = (void *)&request;
-    http_parser_init(parser, HTTP_REQUEST);
-    while (!parser->status_code && (bytes_received = recv(client, buf, MAXLINE, 0))>0)
-    {
-        data_len = tot_bytes_received + bytes_received;
-        auto tmp = (char *)realloc(data, (data_len+1)*sizeof(char));
-        if (!tmp) {
-            FREE(data);
-            FREE(parser);
-            close(client);
-            return nullptr;
-        }
-        data = tmp;
-        copy_str(data+tot_bytes_received, buf, bytes_received);
-        tot_bytes_received = data_len;
-        parsed_bytes += http_parser_execute(parser, &settings, data+parsed_bytes, bytes_received);
-    }
-    method = 1<<parser->method;
-
-    FREE(data);
-    FREE(parser);
-    if (bytes_received == -1) {
-        close(client);
-        return nullptr;
-    }
-
-    GET_HEADER(request, Host, domain);
-    int pos, domain_len = strlen(domain);
-    if (~(pos = contains_char(domain, domain_len, ':'))) {
-        request.set_hostname(domain, pos);
-        request.set_port(domain + pos + 1, domain_len - pos - 1);
-    } else {
-        request.set_hostname(domain, domain_len);
-        request.set_port("80", 2);
-    }
-
-    auto func = Route(request.path, method);
+    HTTP_Parser<HTTP_Request> parser(&request);
+    parser.Parse(client);
+    auto func = Route(request.path, HttpStr2HttpEnum(request.method));
+    STR data = nullptr;
     if (func) {
         auto &&res = func(request);
         data = res.Serialize();
     } else {
         HTTP_Response res("Invalid method", TEXT_PLAIN, HTTP_STATUS_BAD_REQUEST);
         data = res.Serialize();
-
     }
 
-    data_len = STRLEN(data);
+    size_t data_len = STRLEN(data);
+    size_t bytes_sent, tot_bytes_sent = 0;
     while (tot_bytes_sent < data_len) {
         bytes_sent = send(client, data + tot_bytes_sent, 1024, 0);
         if (bytes_sent == -1) {

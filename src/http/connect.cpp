@@ -1,15 +1,16 @@
 //
 // Created by huang on 19-6-9.
 //
-
+#include <algorithm>
 #include <connect.h>
+#include <http/http_parser.h>
 
 int InitConnection(CSTR hostname, CSTR port, struct addrinfo **res) {
     struct addrinfo hints;
     memset(&hints, 0 , sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
-    if (strlen(port)) {
+    if (STRLEN(port)) {
         return getaddrinfo(hostname, port, &hints, res);
     } else {
         return getaddrinfo(hostname, "80", &hints, res);
@@ -63,23 +64,28 @@ int MakeRequest(int sockfd, HTTP_Request &request) {
     return bytes_sent;
 }
 
-int FetchResponse(int sockfd, STR *response) {
-    int bytes_received, tot_bytes_received = 0;
-    char buf[MAXLINE];
-    while ((bytes_received = recv(sockfd, buf, MAXLINE, 0))>0) {
-        int len = tot_bytes_received + bytes_received;
-        auto tmp = (char *)realloc(*response, (len+1)* sizeof(char));
-        if (!tmp) {
-            close(sockfd);
-            return -1;
-        }
-        *response = tmp;
-        copy_str(*response+tot_bytes_received, buf, bytes_received);
-        tot_bytes_received = len;
-    }
+int FetchResponse(int sockfd, HTTP_Response& response) {
+    HTTP_Parser<HTTP_Response> parser(&response);
+    parser.Parse(sockfd);
     close(sockfd);
-    if (bytes_received == -1) {
-        return -1;
-    }
-    return tot_bytes_received;
+    return 0;
+//
+//    int bytes_received, tot_bytes_received = 0;
+//    char buf[MAXLINE];
+//    while ((bytes_received = recv(sockfd, buf, MAXLINE, 0))>0) {
+//        int len = tot_bytes_received + bytes_received;
+//        auto tmp = (char *)realloc(*response, (len+1)* sizeof(char));
+//        if (!tmp) {
+//            close(sockfd);
+//            return -1;
+//        }
+//        *response = tmp;
+//        copy_str(*response+tot_bytes_received, buf, bytes_received);
+//        tot_bytes_received = len;
+//    }
+//    close(sockfd);
+//    if (bytes_received == -1) {
+//        return -1;
+//    }
+//    return tot_bytes_received;
 }

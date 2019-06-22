@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <http/http.h>
+#include <http/http_parser.h>
 
 #define NODE_NUM 128
 #define route_entry(func) HTTP_Response func(const HTTP_Request &request)
@@ -72,7 +72,7 @@ struct trie_tree {
             rt = rt->nodes[c];
         }
         //TODO add method judge
-        if (!rt->cb || !(rt->methods & method)) {
+        if (!rt->cb || !(rt->methods & (1<<method))) {
             return nullptr;
         }
         return rt->cb;

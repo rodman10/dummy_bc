@@ -5,50 +5,45 @@
 #include <http/connect.h>
 #include <http/request.h>
 
-STR HTTP_Get(CSTR url) {
+int HTTP_Get(CSTR url, HTTP_Response& response) {
     HTTP_Headers headers;
-    HTTP_Get(url, headers);
+    HTTP_Get(url, headers, response);
 }
 
 
-STR HTTP_Get(CSTR url, HTTP_Headers &headers) {
+int HTTP_Get(CSTR url, HTTP_Headers &headers, HTTP_Response& response) {
     int sockfd;
-    STR response = nullptr;
     addrinfo *res;
     HTTP_Request request(url, headers);
     request.method = "GET";
     InitConnection(request.hostname, request.port, &res);
-    if ((sockfd = MakeConnection(res))==-1) {
-        return nullptr;
+    if ((sockfd = MakeConnection(res)) == -1) {
+        return -1;
     }
     if (MakeRequest(sockfd, request) == -1) {
-        return nullptr;
+        return -1;
     }
-    FetchResponse(sockfd, &response);
-    return response;
+    return FetchResponse(sockfd, response);
 }
 
-STR HTTP_Post(CSTR url, CSTR body) {
+int HTTP_Post(CSTR url, CSTR body, HTTP_Response& response) {
     HTTP_Headers headers;
-    HTTP_Post(url, headers, body);
+    HTTP_Post(url, headers, body, response);
 }
 
 //TODO more post method process
-STR HTTP_Post(CSTR url, HTTP_Headers &headers, CSTR body) {
-    auto n = strlen(url);
+int HTTP_Post(CSTR url, HTTP_Headers &headers, CSTR body, HTTP_Response& response) {
     int sockfd;
-    STR response = nullptr;
     addrinfo *res;
     HTTP_Request request(url, headers);
-    request.set_body(body, strlen(body));
+    request.SetBody(body, strlen(body));
     request.method = "POST";
     InitConnection(request.hostname, request.port, &res);
     if ((sockfd = MakeConnection(res))==-1) {
-        return nullptr;
+        return -1;
     }
     if (MakeRequest(sockfd, request) == -1) {
-        return nullptr;
+        return -1;
     }
-    FetchResponse(sockfd, &response);
-    return response;
+    return FetchResponse(sockfd, response);
 }

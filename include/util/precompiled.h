@@ -66,15 +66,17 @@
         ptr = nullptr; \
     }
 
-inline int contains_char(CSTR str, int length, char c) {
-    for (int i = 0; i < length; ++i) {
-        if(str[i] == c) {
-            return i;
-        }
-    }
-    return -1;
-}
+#define MALLOC_CPOY_STR(field, at, length) \
+    field = malloc_str(length); \
+    copy_str(field, at, length);
 
+inline int str2num(CSTR num, int length) {
+    int res = 0;
+    for (int i = 0; i < length; ++i) {
+        res = res*10 + (num[i]-'0');
+    }
+    return res;
+}
 
 inline int num_len(int num) {
     int len = 0;
