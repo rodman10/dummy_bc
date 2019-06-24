@@ -6,7 +6,6 @@
 #define BLOCK_CHAIN_REQUEST_H
 
 #include <util/precompiled.h>
-#include <http_parser.h>
 #include <string.h>
 #include <netdb.h>
 #include <web/route.h>
@@ -15,13 +14,13 @@
 
 
 //TODO avoid malloc
-STR HTTP_Get(CSTR url);
+int HTTP_Get(CSTR url, HTTP_Response& response);
 
-STR HTTP_Get(CSTR url, HTTP_Headers &headers);
+int HTTP_Get(CSTR url, HTTP_Headers &headers, HTTP_Response& response);
 
 //TODO more post method process
-STR HTTP_Post(CSTR url, CSTR body);
+int HTTP_Post(CSTR url, CSTR body, HTTP_Response& response);
 
-STR HTTP_Post(CSTR url, HTTP_Headers &headers, CSTR body);
+int HTTP_Post(CSTR url, HTTP_Headers &headers, CSTR body, HTTP_Response& response);
 
 #endif //BLOCK_CHAIN_REQUEST_H

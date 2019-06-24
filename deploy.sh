@@ -1,0 +1,1 @@
+apt instal -y autoconf libtool

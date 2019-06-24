@@ -5,7 +5,6 @@
 #include <vector>
 #include <json/json.h>
 #include <block_chain/BlockChain.h>
-#include <http/http.h>
 
 using std::vector;
 using huang::Block;
@@ -67,17 +66,18 @@ route_entry(register_with) {
         return {"Invalid data", TEXT_PLAIN, HTTP_STATUS_BAD_REQUEST};
     }
     Json::Value data;
-    GET_HEADER(request, "Host", host);
+    GET_HEADER(request, HOST, host);
     data["node_address"] = host;
     auto buf = malloc_str(strlen(host)+14);
     sprintf(buf, "%s/register_node", data.asCString());
 
     HTTP_Headers headers;
     ADD_HEADER_WITH_OBJ(headers, CONTENT_TYPE, APPLICATION_JSON);
-    auto response= HTTP_Post(buf, headers, Json::FastWriter().write(data).c_str());
+    HTTP_Response response;
+    HTTP_Post(buf, headers, Json::FastWriter().write(data).c_str(), response);
     //TODO add http error
     Json::Value res;
-    Json::Reader().parse(response, res);
+    Json::Reader().parse(response.body, res);
     block_chain = huang::BlockChain<Transaction>(res["chain"]);
     JSON2SET(res["peers"], peers, asString);
     return {"Registration successful", APPLICATION_JSON, HTTP_STATUS_OK};

@@ -16,9 +16,12 @@ bool Consensus() {
     for (auto &&node: peers) {
         STR url = malloc_str(node.size() + 6);
         sprintf(url, "%s/chain", node.c_str());
-        char *response = HTTP_Get(url);
+        HTTP_Response response;
+        if (HTTP_Get(url, response) == -1) {
+            return 0;
+        }
         Json::Value json;
-        Json::Reader().parse(response, json);
+        Json::Reader().parse(response.body, json);
         int length = json["length"].asInt();
         //TODO replace with chain struct
         huang::BlockChain<Transaction> chain(json["chain"]);
@@ -40,7 +43,10 @@ void AnnounceNewBlock(const huang::Block<Transaction> &block) {
     for (auto &&node : peers) {
         STR url = malloc_str(node.size() + 10);
         sprintf(url, "%s/add_block", node.c_str());
-        HTTP_Post(url, block.toJSON().asCString());
+        HTTP_Response response;
+        if (HTTP_Post(url, block.toJSON().asCString(), response) == -1) {
+            puts("announce new block failed");
+        }
 
     }
 }
