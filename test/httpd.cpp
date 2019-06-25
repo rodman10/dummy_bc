@@ -96,11 +96,11 @@ int main(int argc, char **argv) {
 
     pthread_t new_thread;
 
-    freopen(argv[1], "r", stdin);
-    char host[22];
-    while (~scanf("%s", host)) {
-        peers.emplace(host);
-    }
+//    freopen(argv[1], "r", stdin);
+//    char host[22];
+//    while (~scanf("%s", host)) {
+//        peers.emplace(host);
+//    }
 
     server_sock = start_up(argv[2], argv[3]);
 
