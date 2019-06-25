@@ -46,9 +46,11 @@ route_entry(mine) {
         return {"No transactions to mine", TEXT_PLAIN, HTTP_STATUS_OK};
     }
     // const str length is 16
-    auto buf = malloc_str(num_len(res) + 16);
+    auto buf = MALLOC_STR(num_len(res) + 16);
     sprintf(buf, "Block %d is mined.", res);
-    return {buf, TEXT_PLAIN, HTTP_STATUS_OK};
+    HTTP_Response response = {buf, TEXT_PLAIN, HTTP_STATUS_OK};
+    FREE(buf);
+    return std::move(response);
 }
 
 route_entry(register_node) {
@@ -68,13 +70,14 @@ route_entry(register_with) {
     Json::Value data;
     GET_HEADER(request, HOST, host);
     data["node_address"] = host;
-    auto buf = malloc_str(strlen(host)+14);
+    auto buf = MALLOC_STR(strlen(host)+14);
     sprintf(buf, "%s/register_node", data.asCString());
 
     HTTP_Headers headers;
     ADD_HEADER_WITH_OBJ(headers, CONTENT_TYPE, APPLICATION_JSON);
     HTTP_Response response;
     HTTP_Post(buf, headers, Json::FastWriter().write(data).c_str(), response);
+    FREE(buf);
     //TODO add http error
     Json::Value res;
     Json::Reader().parse(response.body, res);

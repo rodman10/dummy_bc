@@ -24,8 +24,6 @@ the implement code
 
 ## Dependency
 
-- http_parser
-
 - pthread
 
 - jsoncpp

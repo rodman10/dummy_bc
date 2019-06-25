@@ -40,7 +40,7 @@ int MakeConnection(struct addrinfo *res) {
 //    }
 //    int header_len = headers.headers_length, body_len = STRLEN(body);
 //    // why plus 2: between header and data
-//    char *buf = malloc_str(BASIC_REQUEST_STR_LEN(method_str, path) + header_len + BLANK_LINE + body_len);
+//    char *buf = MALLOC_STR(BASIC_REQUEST_STR_LEN(method_str, path) + header_len + BLANK_LINE + body_len);
 //    BASIC_REQUEST_STR(buf, method_str, path);
 //
 //    for (int i = 0; i < headers.headers_size; ++i) {
@@ -56,7 +56,7 @@ int MakeRequest(int sockfd, HTTP_Request &request) {
     int bytes_sent;
     auto data = request.Serialize();
     bytes_sent = send(sockfd, data, STRLEN(data), 0);
-    free_ptr(data);
+    FREE(data);
     if (bytes_sent==-1) {
         return -1;
     }
@@ -80,7 +80,7 @@ int FetchResponse(int sockfd, HTTP_Response& response) {
 //            return -1;
 //        }
 //        *response = tmp;
-//        copy_str(*response+tot_bytes_received, buf, bytes_received);
+//        COPY_STR(*response+tot_bytes_received, buf, bytes_received);
 //        tot_bytes_received = len;
 //    }
 //    close(sockfd);

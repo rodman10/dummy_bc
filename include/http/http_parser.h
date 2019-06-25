@@ -224,14 +224,14 @@ struct HTTP_Headers {
             return;
         }
         headers = tmp;
-        headers[headers_size][0] = malloc_str(length);
-        copy_str(headers[headers_size][0], at, length);
+        headers[headers_size][0] = MALLOC_STR(length);
+        COPY_STR(headers[headers_size][0], at, length);
         // why plus 2: ':' and space
         headers_length += length + 2;
     }
     void AddHeaderValue(CSTR at, size_t length) {
-        headers[headers_size][1] = malloc_str(length);
-        copy_str(headers[headers_size][1], at, length);
+        headers[headers_size][1] = MALLOC_STR(length);
+        COPY_STR(headers[headers_size][1], at, length);
         // why plus 2: \r\n
         headers_length += length + 2;
         ++headers_size;
@@ -248,10 +248,8 @@ struct HTTP_Headers {
     virtual ~HTTP_Headers() {
         if (headers) {
             for (int i = 0; i < headers_size; ++i) {
-                free(headers[i][0]);
-                headers[i][0] = nullptr;
-                free(headers[i][1]);
-                headers[i][1] = nullptr;
+                FREE(headers[i][0]);
+                FREE(headers[i][1]);
             }
             FREE(headers);
         }
@@ -277,13 +275,13 @@ struct HTTP_Base : HTTP_Headers {
     virtual STR Serialize() const = 0;
 
     int AppendBody(CSTR at, int pos, size_t length) {
-        copy_str(body+pos, at, length);
+        COPY_STR(body+pos, at, length);
         return pos + length;
     }
 
     void SetBody(CSTR at, size_t length) {
-        body = malloc_str(length);
-        copy_str(body, at, length);
+        body = MALLOC_STR(length);
+        COPY_STR(body, at, length);
     }
 };
 
@@ -300,18 +298,18 @@ struct HTTP_Request: HTTP_Base {
     STR method;
 
     void set_hostname(CSTR at, size_t length) {
-        hostname = malloc_str(length);
-        copy_str(hostname, at, length);
+        hostname = MALLOC_STR(length);
+        COPY_STR(hostname, at, length);
     }
 
     void set_port(CSTR at, size_t length) {
-        port = malloc_str(length);
-        copy_str(port, at, length);
+        port = MALLOC_STR(length);
+        COPY_STR(port, at, length);
     }
 
     void set_path(CSTR at, size_t length) {
-        path = malloc_str(length);
-        copy_str(path, at, length);
+        path = MALLOC_STR(length);
+        COPY_STR(path, at, length);
     }
 
     HTTP_Request(CSTR url, HTTP_Headers &headers) : HTTP_Base(headers) {
@@ -367,7 +365,7 @@ struct HTTP_Request: HTTP_Base {
 
     STR Serialize() const {
         // why plus 2: between header and body
-        STR buf = malloc_str(BASIC_REQUEST_STR_LEN(method, path) + headers_length + BLANK_LINE + body_length);
+        STR buf = MALLOC_STR(BASIC_REQUEST_STR_LEN(method, path) + headers_length + BLANK_LINE + body_length);
         BASIC_REQUEST_STR(buf, method, path);
 
         SERIALIZE_HEADERS(buf);
@@ -394,28 +392,40 @@ struct HTTP_Response : HTTP_Base {
     HTTP_Response() {}
 
     HTTP_Response(http_status code) : code(code) {}
+    HTTP_Response(HTTP_Response &&response) {
+        std::swap(headers_size, response.headers_size);
+        std::swap(headers_length, response.headers_length);
+        std::swap(headers, response.headers);
+        std::swap(body, response.body);
+        std::swap(body_length, response.body_length);
+        std::swap(hostname, response.hostname);
+        std::swap(port, response.port);
+        std::swap(version, response.version);
+        std::swap(code, response.code);
+        std::swap(msg, response.msg);
+    }
 
     HTTP_Response(CSTR body, http_header_value body_type, http_status code) : code(code) {
         headers = nullptr;
         auto len = STRLEN(body);
         body_length = len;
         if (len) {
-            this->body = malloc_str(len);
-            copy_str(this->body, body, len);
+            this->body = MALLOC_STR(len);
+            COPY_STR(this->body, body, len);
         }
         // maybe add keep alive
         ADD_HEADER(CONNECTION, CLOSE);
         ADD_HEADER(CONTENT_TYPE, body_type);
         AddHeaderKey(get_header_name(CONTENT_LENGTH), get_header_name_length(CONTENT_LENGTH));
         auto n_len = num_len(len);
-        STR buf = malloc_str(n_len);
+        STR buf = MALLOC_STR(n_len);
         sprintf(buf, "%zu", len);
         AddHeaderValue(buf, n_len);
         FREE(buf);
     }
 
     STR Serialize() const {
-        STR buf = malloc_str(BASIC_RESPONSE_STR_LEN(code) + headers_length + BLANK_LINE + body_length);
+        STR buf = MALLOC_STR(BASIC_RESPONSE_STR_LEN(code) + headers_length + BLANK_LINE + body_length);
         BASIC_RESPONSE_STR(buf, code);
 
         SERIALIZE_HEADERS(buf);
@@ -457,23 +467,23 @@ struct HTTP_Parser {
         size_t bytes_received, tot_bytes_received = 0;
         size_t parsed_bytes = 0, start = 0;
         int buf_size = 16;
-        STR data = (STR)malloc(sizeof(char) * buf_size);
-        while (!__EOF__ && (bytes_received = recv(client, data+start, buf_size-start, 0))) {
-            parsed_bytes = parse(data, bytes_received + start);
+        STR buf = (STR)malloc(sizeof(char) * buf_size);
+        while (!__EOF__ && (bytes_received = recv(client, buf+start, buf_size-start, 0))) {
+            parsed_bytes = parse(buf, bytes_received + start);
             if (!parsed_bytes) {
                 start = buf_size;
                 buf_size <<= 1;
-                auto tmp = (STR)realloc(data, sizeof(char)*buf_size);
+                auto tmp = (STR)realloc(buf, sizeof(char)*buf_size);
                 if (!tmp) {
                     puts("realloc memory failed");
                 }
-                data = tmp;
+                buf = tmp;
             } else {
                 start = buf_size -parsed_bytes;
-                strncpy(data, data+parsed_bytes, start);
+                strncpy(buf, buf+parsed_bytes, start);
             }
         }
-        FREE(data);
+        FREE(buf);
     }
     
     size_t parse(CSTR at, int length);
@@ -515,7 +525,7 @@ struct HTTP_Parser {
                             }
                             if (__IS_CONTENT_LENGTH__) {
                                 data->body_length = str2num(begin, len);
-                                data->body = malloc_str(data->body_length);
+                                data->body = MALLOC_STR(data->body_length);
                                 __IS_CONTENT_LENGTH__ = 0;
                             }
                             if (__IS_HOST__) {

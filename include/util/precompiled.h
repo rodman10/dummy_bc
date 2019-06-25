@@ -9,15 +9,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <algorithm>
 
 #define CSTR const char*
 #define STR char*
 #define MAXLINE 1024
 #define bcase break;case
 #define bdefault break;default
-#define malloc_str(len) (char *)malloc(((len)+1)*sizeof(char))
-#define copy_str(dest, src, len) strncpy(dest, src, len), (dest)[len] = 0
-#define free_ptr(ptr) free(ptr), (ptr) = nullptr
+#define MALLOC_STR(len) (char *)malloc(((len)+1)*sizeof(char))
+#define COPY_STR(dest, src, len) strncpy(dest, src, len), (dest)[len] = 0
 #define eb emplace_back
 #define pb push_back
 #define STRLEN(ptr) (ptr ? strlen(ptr) : 0)
@@ -39,8 +39,8 @@
 #define JSON2CSTR(data, f, dest) \
     auto _##f = JSON2Type(data, f, CString); \
     auto f##len = strlen(_##f); \
-    dest = malloc_str(f##len); \
-    copy_str(dest, (_##f), f##len);
+    dest = MALLOC_STR(f##len); \
+    COPY_STR(dest, (_##f), f##len);
 
 #define TYPE2JSON(data, f, type) \
     data[#f] = Json::Value((type)f);
@@ -67,8 +67,8 @@
     }
 
 #define MALLOC_CPOY_STR(field, at, length) \
-    field = malloc_str(length); \
-    copy_str(field, at, length);
+    field = MALLOC_STR(length); \
+    COPY_STR(field, at, length);
 
 inline int str2num(CSTR num, int length) {
     int res = 0;

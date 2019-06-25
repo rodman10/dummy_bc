@@ -14,7 +14,7 @@ bool Consensus() {
     int current_len = block_chain.chain.size();
     bool flag = 0;
     for (auto &&node: peers) {
-        STR url = malloc_str(node.size() + 6);
+        STR url = MALLOC_STR(node.size() + 6);
         sprintf(url, "%s/chain", node.c_str());
         HTTP_Response response;
         if (HTTP_Get(url, response) == -1) {
@@ -41,10 +41,10 @@ bool Consensus() {
 
 void AnnounceNewBlock(const huang::Block<Transaction> &block) {
     for (auto &&node : peers) {
-        STR url = malloc_str(node.size() + 10);
-        sprintf(url, "%s/add_block", node.c_str());
+        STR url = MALLOC_STR(node.size() + 10);
+        sprintf(url, "http://%s/add_block", node.c_str());
         HTTP_Response response;
-        if (HTTP_Post(url, block.toJSON().asCString(), response) == -1) {
+        if (HTTP_Post(url, Json::FastWriter().write(block.toJSON()).c_str(), response) == -1) {
             puts("announce new block failed");
         }
 

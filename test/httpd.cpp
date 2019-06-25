@@ -10,6 +10,8 @@
 #include <pthread.h>
 #include <http/http_parser.h>
 #include <block_chain/BlockChain.h>
+#include <arpa/inet.h>
+#include <fcntl.h>
 
 std::unordered_set<std::string> peers;
 bool InitRoute();
@@ -29,7 +31,7 @@ void *accept_request(void *arg) {
     auto func = Route(request.path, HttpStr2HttpEnum(request.method));
     STR data = nullptr;
     if (func) {
-        auto &&res = func(request);
+        auto res = func(request);
         data = res.Serialize();
     } else {
         HTTP_Response res("Invalid method", TEXT_PLAIN, HTTP_STATUS_BAD_REQUEST);
@@ -38,8 +40,9 @@ void *accept_request(void *arg) {
 
     size_t data_len = STRLEN(data);
     size_t bytes_sent, tot_bytes_sent = 0;
-    while (tot_bytes_sent < data_len) {
-        bytes_sent = send(client, data + tot_bytes_sent, 1024, 0);
+    size_t ready_send = 0;
+    while ((ready_send = data_len - tot_bytes_sent) > 0) {
+        bytes_sent = send(client, data + tot_bytes_sent, ready_send < MAXLINE ? ready_send : MAXLINE, 0);
         if (bytes_sent == -1) {
             goto end;
         }
@@ -50,7 +53,7 @@ void *accept_request(void *arg) {
     close(client);
 }
 
-int startup(int &port) {
+int start_up(STR host, STR port) {
     InitRoute();
     int on = 1;
     struct sockaddr_in server_addr;
@@ -61,8 +64,8 @@ int startup(int &port) {
     }
     memset(&server_addr, 0, sizeof server_addr);
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(port);
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    server_addr.sin_port = htons(str2num(port, strlen(port)));
+    server_addr.sin_addr.s_addr = inet_addr(host);
 
     if((setsockopt(httpd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof on)) < 0) {
         error_die("ERROR: set sockopt failed!");
@@ -75,7 +78,12 @@ int startup(int &port) {
     if (listen(httpd, 5) < 0) {
         error_die("ERROR: listen socket failed!");
     }
+    printf("httpd running on port %s\n", port);
     return httpd;
+}
+
+void register_node(STR host, STR port) {
+
 }
 
 huang::BlockChain<Transaction> block_chain;
@@ -83,14 +91,18 @@ int main(int argc, char **argv) {
     block_chain.CreateGenesisBlock();
 
     int server_sock, client_sock;
-    int port = atoi(argv[1]);
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
 
     pthread_t new_thread;
 
-    server_sock = startup(port);
-    printf("httpd running on port %d\n", port);
+    freopen(argv[1], "r", stdin);
+    char host[22];
+    while (~scanf("%s", host)) {
+        peers.emplace(host);
+    }
+
+    server_sock = start_up(argv[2], argv[3]);
 
     while (1) {
         client_sock = accept(server_sock, (
