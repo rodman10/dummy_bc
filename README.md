@@ -126,3 +126,7 @@ the implement code
             "peers": []
         }
         ```
+## Usage
+
+test/httpd {SeedFile} {Host} {Port}
+
